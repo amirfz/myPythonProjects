@@ -37,13 +37,14 @@ class Window(QtGui.QMainWindow):
         self.effResult.resize(100,20)
         self.effResult.move(690,110)
             
+        self.numOfInputs = 6;
         self.intRangeTable = QtGui.QTableWidget(self)
-        self.intRangeTable.setRowCount(4)
+        self.intRangeTable.setRowCount(self.numOfInputs)
         self.intRangeTable.setColumnCount(1)
-        self.intRangeTable.resize(100,145)
+        self.intRangeTable.resize(100,205)
         self.intRangeTable.move(690,150)
         self.intRangeTable.cellChanged.connect(self.setIntRange)
-        self.intRangeArray = np.array([0, 0, 0, 0])
+        self.intRangeArray = np.zeros(self.numOfInputs)
         
         self.dataPlot = Qwt.QwtPlot(self)
         self.dataPlot.setGeometry(QtCore.QRect(10, 10, 650, 580))
@@ -66,10 +67,11 @@ class Window(QtGui.QMainWindow):
         self.zoomer.setRubberBandPen(QPen(Qt.black))
         
     def showDialog(self):
+        self.zoomer.zoom(0)
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open a data file', '.', 'txt files (*.txt);;All Files (*.*)')
         f = open(fname, 'r')
         with f:
-         self.data = np.genfromtxt(f, skiprows=1)
+         self.data = np.genfromtxt(f, skip_header=10, skip_footer=1)
          self.tdata = self.data[:,0]
          self.cdata = self.data[:,1]  
          self.plotData()
@@ -77,29 +79,42 @@ class Window(QtGui.QMainWindow):
          
     def setIntRange(self):
          self.intRangeArray[self.intRangeTable.currentRow()] = self.intRangeTable.currentItem().text() 
-         np.sort(self.intRangeArray)
-         self.plotData()
-         if np.count_nonzero(self.intRangeArray)==4:
-             self.effResult.setText(str((np.sum(self.cdata[self.intRangeArray[2]:self.intRangeArray[3]])/np.sum(self.cdata[self.intRangeArray[0]:self.intRangeArray[1]]))))
+
+         if np.count_nonzero(self.intRangeArray) == self.numOfInputs:
+             np.sort(self.intRangeArray)
+             self.intRangeArrayAll = np.zeros(2*int(self.intRangeArray[5])+2)
+             
+             peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
+             self.intRangeArrayAll[0:2] = [self.intRangeArray[0], self.intRangeArray[1]]
+             inputPulse = np.sum(self.cdata[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
+             outputPulse = 0;
+             peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
+             nextPeakStarts = self.intRangeArray[4] - self.intRangeArray[2]
+             for idx in range(int(self.intRangeArray[5])):
+                 bkg = np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts-peakWidth:self.intRangeArray[2]+idx*nextPeakStarts])
+                 outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts:self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]) - bkg
+                 self.intRangeArrayAll[2*idx+2:2*idx+4] = [self.intRangeArray[2]+idx*nextPeakStarts, self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]
+                 
+             self.effResult.setText(str(outputPulse/inputPulse))
+             self.plotData()
         
-    def plotData(self):
-        self.zoomer.zoom(0)
-        
+    def plotData(self):        
         self.curve.detach()
         self.curve.setData(range(len(self.tdata)), self.cdata)
         self.curve.setPen(QPen(Qt.blue,2))
         self.curve.attach(self.dataPlot)
         
-        self.curve2.detach()
-        self.curve2.setData(self.intRangeArray,np.zeros(len(self.intRangeArray)))
-        self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
-        self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
-                                        QBrush(),
-                                        QPen(Qt.red),
-                                        QSize(7, 7)))
-        self.curve2.attach(self.dataPlot)
+        if np.count_nonzero(self.intRangeArray) == self.numOfInputs:      
+            self.curve2.detach()
+            self.curve2.setData(self.intRangeArrayAll,np.zeros(len(self.intRangeArrayAll)))
+            self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
+            self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
+                                                QBrush(),
+                                            QPen(Qt.red),
+                                            QSize(7, 7)))
+            self.curve2.attach(self.dataPlot)
         
-        self.dataPlot.replot()
+            self.dataPlot.replot()
     
 def main(): 
     app = QtGui.QApplication(sys.argv)
