@@ -54,6 +54,7 @@ class Window(QtGui.QMainWindow):
         grid = Qwt.QwtPlotGrid
         
         self.curve = Qwt.QwtPlotCurve('data plot')
+        self.curve1 = Qwt.QwtPlotCurve('data plot')
         self.curve2 = Qwt.QwtPlotCurve('data plot')
         
         self.show()
@@ -68,14 +69,22 @@ class Window(QtGui.QMainWindow):
         
     def showDialog(self):
         self.zoomer.zoom(0)
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open a data file', '.', 'txt files (*.txt);;All Files (*.*)')
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open a first data file', '.', 'txt files (*.txt);;All Files (*.*)')
+        f = open(fname, 'r')
+        with f:
+         self.data = np.genfromtxt(f, skip_header=10, skip_footer=1)
+         self.tdata1 = self.data[:,0]
+         self.cdata1 = self.data[:,1]  
+         
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open a secnd data file', '.', 'txt files (*.txt);;All Files (*.*)')
         f = open(fname, 'r')
         with f:
          self.data = np.genfromtxt(f, skip_header=10, skip_footer=1)
          self.tdata = self.data[:,0]
          self.cdata = self.data[:,1]  
-         self.plotData()
-         self.zoomer.setZoomBase()
+        
+        self.plotData()
+        self.zoomer.setZoomBase()
          
     def setIntRange(self):
          self.intRangeArray[self.intRangeTable.currentRow()] = self.intRangeTable.currentItem().text() 
@@ -86,7 +95,7 @@ class Window(QtGui.QMainWindow):
              
              peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
              self.intRangeArrayAll[0:2] = [self.intRangeArray[0], self.intRangeArray[1]]
-             inputPulse = np.sum(self.cdata[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
+             inputPulse = np.sum(self.cdata1[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata1[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
              outputPulse = 0;
              peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
              nextPeakStarts = self.intRangeArray[4] - self.intRangeArray[2]
@@ -103,6 +112,11 @@ class Window(QtGui.QMainWindow):
         self.curve.setData(range(len(self.tdata)), self.cdata)
         self.curve.setPen(QPen(Qt.blue,2))
         self.curve.attach(self.dataPlot)
+        
+        self.curve1.detach()
+        self.curve1.setData(range(len(self.tdata1)), self.cdata1)
+        self.curve1.setPen(QPen(Qt.red,2))
+        self.curve1.attach(self.dataPlot)
         
         if np.count_nonzero(self.intRangeArray) == self.numOfInputs:      
             self.curve2.detach()
