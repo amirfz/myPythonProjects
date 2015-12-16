@@ -73,15 +73,15 @@ class Window(QtGui.QMainWindow):
         f = open(fname, 'r')
         with f:
          self.data = np.genfromtxt(f, skip_header=10, skip_footer=1)
-         self.tdata1 = self.data[:,0]
-         self.cdata1 = self.data[:,1]  
+         self.tdata1 = self.data[:,1]
+         self.cdata1 = self.data[:,0]  
          
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open a secnd data file', '.', 'txt files (*.txt);;All Files (*.*)')
         f = open(fname, 'r')
         with f:
          self.data = np.genfromtxt(f, skip_header=10, skip_footer=1)
-         self.tdata = self.data[:,0]
-         self.cdata = self.data[:,1]  
+         self.tdata = self.data[:,1]
+         self.cdata = self.data[:,0]  
         
         self.plotData()
         self.zoomer.setZoomBase()
@@ -124,7 +124,7 @@ class Window(QtGui.QMainWindow):
             self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
             self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
                                                 QBrush(),
-                                            QPen(Qt.red),
+                                            QPen(Qt.green),
                                             QSize(7, 7)))
             self.curve2.attach(self.dataPlot)
         
