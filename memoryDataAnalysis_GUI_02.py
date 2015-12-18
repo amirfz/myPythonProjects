@@ -23,34 +23,36 @@ class Window(QtGui.QMainWindow):
         self.__initZooming()
         
     def __initUI(self):
+        self.btnSize = 100   
+        self.txtSize = 20
+        self.lftMargin = 10
+        self.topMargin = 40
+        self.btmMargin = 10
+        
         exitBtn = QtGui.QPushButton('EXIT',self)
         exitBtn.clicked.connect(QtCore.QCoreApplication.instance().quit)
-        exitBtn.resize(100,50)
-        exitBtn.move(690,10)
+        exitBtn.resize(self.btnSize,self.btnSize/4)
+        exitBtn.move(self.lftMargin,self.topMargin)
         
         loadDataBtn = QtGui.QPushButton('Load Data',self)
         loadDataBtn.clicked.connect(self.showDialog)
-        loadDataBtn.resize(100,50)
-        loadDataBtn.move(690,60)
+        loadDataBtn.resize(self.btnSize,self.btnSize/4)
+        loadDataBtn.move(self.lftMargin,self.topMargin+self.btnSize/4)
         
         self.effResult = QtGui.QLineEdit(self)
-        self.effResult.resize(100,20)
-        self.effResult.move(690,110)
+        self.effResult.resize(self.btnSize,self.txtSize)
+        self.effResult.move(self.lftMargin,self.topMargin+self.btnSize/4*2)
             
         self.numOfInputs = 6;
         self.intRangeTable = QtGui.QTableWidget(self)
         self.intRangeTable.setRowCount(self.numOfInputs)
         self.intRangeTable.setColumnCount(1)
-        self.intRangeTable.resize(100,205)
-        self.intRangeTable.move(690,150)
+        self.intRangeTable.resize(self.btnSize,205)
+        self.intRangeTable.move(self.lftMargin,self.topMargin+self.btnSize/4*2+self.txtSize)
         self.intRangeTable.cellChanged.connect(self.setIntRange)
         self.intRangeArray = np.zeros(self.numOfInputs)
         
         self.dataPlot = Qwt.QwtPlot(self)
-        self.dataPlot.setGeometry(QtCore.QRect(10, 10, 650, 580))
-        self.dataPlot.setObjectName("dataPlot")
-        self.dataPlot.setAxisTitle(Qwt.QwtPlot.xBottom, 'x -->')
-        self.dataPlot.setAxisTitle(Qwt.QwtPlot.yLeft, 'y -->')
         grid = Qwt.QwtPlotGrid
         
         self.curve = Qwt.QwtPlotCurve('data plot')
@@ -67,6 +69,9 @@ class Window(QtGui.QMainWindow):
                                         self.dataPlot.canvas())
         self.zoomer.setRubberBandPen(QPen(Qt.black))
         
+    def resizeEvent(self, event):
+        self.dataPlot.setGeometry(QtCore.QRect(self.btnSize*3/2, self.topMargin, self.width()-self.btnSize*3/2-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
+    
     def showDialog(self):
         self.zoomer.zoom(0)
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open a first data file', '.', 'txt files (*.txt);;All Files (*.*)')
