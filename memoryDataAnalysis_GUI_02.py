@@ -21,6 +21,7 @@ class Window(QtGui.QMainWindow):
         self.setWindowTitle('Memory Data Analysis Tool')
         self.__initUI()
         self.__initZooming()
+        self.__initMenu()
         
     def __initUI(self):
         self.btnSize = 100   
@@ -65,12 +66,30 @@ class Window(QtGui.QMainWindow):
         self.zoomer = Qwt.QwtPlotZoomer(Qwt.QwtPlot.xBottom,
                                         Qwt.QwtPlot.yLeft,
                                         Qwt.QwtPicker.DragSelection,
-                                        Qwt.QwtPicker.AlwaysOn,
+                                        Qwt.QwtPicker.AlwaysOff,
                                         self.dataPlot.canvas())
         self.zoomer.setRubberBandPen(QPen(Qt.black))
         
+    def __initMenu(self):
+        menu = QMenu("menu", self)
+        
+        self.mouseActGroup = QActionGroup(self, exclusive=True)
+        a = self.mouseActGroup.addAction(QAction('50%', menu, checkable=True))
+        menu.addAction(a)
+        a.triggered.connect(self.onMouseActGroupTriggered)
+        menu.addAction(self.mouseActGroup.addAction(QAction('100%', menu, checkable=True)))
+        
+        self.menuBar().addMenu(menu)
+        
+    def onMouseActGroupTriggered(self, action):
+        print 'yes'
+        
+        
     def resizeEvent(self, event):
         self.dataPlot.setGeometry(QtCore.QRect(self.btnSize*3/2, self.topMargin, self.width()-self.btnSize*3/2-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
+        
+#    def mouseMoveEvent (self, event):
+#        print event.pos()
     
     def showDialog(self):
         self.zoomer.zoom(0)
