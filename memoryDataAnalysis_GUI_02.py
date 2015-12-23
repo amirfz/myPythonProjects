@@ -12,6 +12,7 @@ from PyQt4 import Qwt5 as Qwt
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.Qt import *
+import matplotlib.pyplot as plt
 
 class Window(QtGui.QMainWindow):
     
@@ -20,8 +21,9 @@ class Window(QtGui.QMainWindow):
         self.setGeometry(50,50,800,600)
         self.setWindowTitle('Memory Data Analysis Tool')
         self.__initUI()
-        self.__initZooming()
         self.__initMenu()
+        self.__initZooming()
+        self.__initPanning()
         
     def __initUI(self):
         self.btnSize = 100   
@@ -69,21 +71,30 @@ class Window(QtGui.QMainWindow):
                                         Qwt.QwtPicker.AlwaysOff,
                                         self.dataPlot.canvas())
         self.zoomer.setRubberBandPen(QPen(Qt.black))
+        self.zoomer.setEnabled(False)
+        
+    def __initPanning(self):
+        self.panner = Qwt.QwtPlotPanner(self.dataPlot.canvas())
+        self.panner.setEnabled(False)
         
     def __initMenu(self):
         menu = QMenu("menu", self)
         
         self.mouseActGroup = QActionGroup(self, exclusive=True)
-        a = self.mouseActGroup.addAction(QAction('50%', menu, checkable=True))
-        menu.addAction(a)
-        a.triggered.connect(self.onMouseActGroupTriggered)
-        menu.addAction(self.mouseActGroup.addAction(QAction('100%', menu, checkable=True)))
+        menu.addAction(self.mouseActGroup.addAction(QAction('zoom', menu, checkable=True)))
+        menu.addAction(self.mouseActGroup.addAction(QAction('pan', menu, checkable=True)))
+        self.mouseActGroup.triggered.connect(self.onMouseActGroupTriggered)
         
         self.menuBar().addMenu(menu)
         
-    def onMouseActGroupTriggered(self, action):
-        print 'yes'
-        
+    def onMouseActGroupTriggered(self, action):        
+        actionText = self.mouseActGroup.checkedAction().text()
+        if actionText == 'zoom':
+            self.zoomer.setEnabled(True)
+            self.panner.setEnabled(False)
+        elif actionText == 'pan':
+            self.zoomer.setEnabled(False)
+            self.panner.setEnabled(True)
         
     def resizeEvent(self, event):
         self.dataPlot.setGeometry(QtCore.QRect(self.btnSize*3/2, self.topMargin, self.width()-self.btnSize*3/2-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
