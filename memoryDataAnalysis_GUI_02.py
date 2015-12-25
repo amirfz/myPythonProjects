@@ -58,7 +58,7 @@ class Window(QtGui.QMainWindow):
         self.zoomer = Qwt.QwtPlotZoomer(Qwt.QwtPlot.xBottom,
                                         Qwt.QwtPlot.yLeft,
                                         Qwt.QwtPicker.DragSelection,
-                                        Qwt.QwtPicker.AlwaysOff,
+                                        Qwt.QwtPicker.AlwaysOn,
                                         self.dataPlot.canvas())
         self.zoomer.setRubberBandPen(QPen(Qt.black))
         self.zoomer.setEnabled(False)
@@ -96,9 +96,6 @@ class Window(QtGui.QMainWindow):
         
     def resizeEvent(self, event):
         self.dataPlot.setGeometry(QtCore.QRect(self.btnSize*3/2, self.topMargin, self.width()-self.btnSize*3/2-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
-        
-#    def mouseMoveEvent (self, event):
-#        print event.pos()
     
     def showDialog(self):
         self.zoomer.zoom(0)
