@@ -32,26 +32,16 @@ class Window(QtGui.QMainWindow):
         self.topMargin = 40
         self.btmMargin = 10
         
-        exitBtn = QtGui.QPushButton('EXIT',self)
-        exitBtn.clicked.connect(QtCore.QCoreApplication.instance().quit)
-        exitBtn.resize(self.btnSize,self.btnSize/4)
-        exitBtn.move(self.lftMargin,self.topMargin)
-        
-        loadDataBtn = QtGui.QPushButton('Load Data',self)
-        loadDataBtn.clicked.connect(self.showDialog)
-        loadDataBtn.resize(self.btnSize,self.btnSize/4)
-        loadDataBtn.move(self.lftMargin,self.topMargin+self.btnSize/4)
-        
         self.effResult = QtGui.QLineEdit(self)
         self.effResult.resize(self.btnSize,self.txtSize)
-        self.effResult.move(self.lftMargin,self.topMargin+self.btnSize/4*2)
+        self.effResult.move(self.lftMargin,self.topMargin)
             
         self.numOfInputs = 6;
         self.intRangeTable = QtGui.QTableWidget(self)
         self.intRangeTable.setRowCount(self.numOfInputs)
         self.intRangeTable.setColumnCount(1)
         self.intRangeTable.resize(self.btnSize,205)
-        self.intRangeTable.move(self.lftMargin,self.topMargin+self.btnSize/4*2+self.txtSize)
+        self.intRangeTable.move(self.lftMargin,self.topMargin+self.txtSize)
         self.intRangeTable.cellChanged.connect(self.setIntRange)
         self.intRangeArray = np.zeros(self.numOfInputs)
         
@@ -80,19 +70,27 @@ class Window(QtGui.QMainWindow):
     def __initMenu(self):
         menu = QMenu("menu", self)
         
+        loadDataAction =  QAction('Load Data', menu)
+        menu.addAction(loadDataAction)
+        loadDataAction.triggered.connect(self.showDialog)        
+        menu.addSeparator()        
         self.mouseActGroup = QActionGroup(self, exclusive=True)
-        menu.addAction(self.mouseActGroup.addAction(QAction('zoom', menu, checkable=True)))
-        menu.addAction(self.mouseActGroup.addAction(QAction('pan', menu, checkable=True)))
+        menu.addAction(self.mouseActGroup.addAction(QAction('Zoom', menu, checkable=True)))
+        menu.addAction(self.mouseActGroup.addAction(QAction('Pan', menu, checkable=True)))
         self.mouseActGroup.triggered.connect(self.onMouseActGroupTriggered)
+        menu.addSeparator()
+        exitAction = QAction('Exit', menu)
+        menu.addAction(exitAction)
+        exitAction.triggered.connect(QtCore.QCoreApplication.instance().quit)
         
         self.menuBar().addMenu(menu)
         
     def onMouseActGroupTriggered(self, action):        
         actionText = self.mouseActGroup.checkedAction().text()
-        if actionText == 'zoom':
+        if actionText == 'Zoom':
             self.zoomer.setEnabled(True)
             self.panner.setEnabled(False)
-        elif actionText == 'pan':
+        elif actionText == 'Pan':
             self.zoomer.setEnabled(False)
             self.panner.setEnabled(True)
         
