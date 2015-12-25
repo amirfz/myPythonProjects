@@ -30,7 +30,7 @@ class Window(QtGui.QMainWindow):
         self.btnSize = 100   
         self.txtSize = 20
         self.lftMargin = 10
-        self.topMargin = 40
+        self.topMargin = 60
         self.btmMargin = 10
         
         self.effResult = QtGui.QLineEdit(self)
@@ -72,41 +72,63 @@ class Window(QtGui.QMainWindow):
         self.picker = Qwt.QwtPlotPicker(Qwt.QwtPlot.xBottom,
                                Qwt.QwtPlot.yLeft,
                                Qwt.QwtPicker.PointSelection,
-                               Qwt.QwtPlotPicker.CrossRubberBand,
+                               Qwt.QwtPlotPicker.RectRubberBand,
                                Qwt.QwtPicker.ActiveOnly,
                                self.dataPlot.canvas())
+        self.picker.setEnabled(False)
                                
         self.picker.selected.connect(self.mousePressed)
-       
-    def mousePressed(self, pos):
-        print pos.x()
         
     def __initMenu(self):
-        menu = QMenu("menu", self)
+        menu = QMenu("File", self)
+        toolbar = QToolBar(self)
         
-        loadDataAction =  QAction('Load Data', menu)
+        loadDataAction =  QAction(QIcon('icons/1451107635_document-open.ico'),'Load Data', menu)
+        loadDataAction.triggered.connect(self.showDialog)       
         menu.addAction(loadDataAction)
-        loadDataAction.triggered.connect(self.showDialog)        
-        menu.addSeparator()        
+        toolbar.addAction(loadDataAction)
+        menu.addSeparator()  
+        toolbar.addSeparator() 
+        
         self.mouseActGroup = QActionGroup(self, exclusive=True)
-        menu.addAction(self.mouseActGroup.addAction(QAction('Zoom', menu, checkable=True)))
-        menu.addAction(self.mouseActGroup.addAction(QAction('Pan', menu, checkable=True)))
+        zoomAction = QAction(QIcon('icons/Zerode-Plump-Search.ico'),'Zoom', menu, checkable=True)        
+        menu.addAction(self.mouseActGroup.addAction(zoomAction))
+        toolbar.addAction(self.mouseActGroup.addAction(zoomAction))
+        panAction = QAction(QIcon('icons/Icons8-Ios7-Hands-Hand.ico'),'Pan', menu, checkable=True)
+        menu.addAction(self.mouseActGroup.addAction(panAction))
+        toolbar.addAction(self.mouseActGroup.addAction(panAction))
+        pickAction = QAction(QIcon('icons/Iconsmind-Outline-Hand-Touch.ico'),'Pick', menu, checkable=True)
+        menu.addAction(self.mouseActGroup.addAction(pickAction))
+        toolbar.addAction(self.mouseActGroup.addAction(pickAction))
         self.mouseActGroup.triggered.connect(self.onMouseActGroupTriggered)
         menu.addSeparator()
-        exitAction = QAction('Exit', menu)
-        menu.addAction(exitAction)
+        toolbar.addSeparator()
+        
+        exitAction = QAction(QIcon('icons/1451107579_exit.ico'),'Exit', menu)
         exitAction.triggered.connect(QtCore.QCoreApplication.instance().quit)
+        menu.addAction(exitAction)
+        toolbar.addAction(exitAction)
         
         self.menuBar().addMenu(menu)
+        self.addToolBar(toolbar)
         
     def onMouseActGroupTriggered(self, action):        
         actionText = self.mouseActGroup.checkedAction().text()
         if actionText == 'Zoom':
             self.zoomer.setEnabled(True)
             self.panner.setEnabled(False)
+            self.picker.setEnabled(False)
         elif actionText == 'Pan':
             self.zoomer.setEnabled(False)
             self.panner.setEnabled(True)
+            self.picker.setEnabled(False)
+        elif actionText == 'Pick':
+            self.zoomer.setEnabled(False)
+            self.panner.setEnabled(False)
+            self.picker.setEnabled(True)
+            
+    def mousePressed(self, pos):
+        print pos.x()
         
     def resizeEvent(self, event):
         self.dataPlot.setGeometry(QtCore.QRect(self.btnSize*3/2, self.topMargin, self.width()-self.btnSize*3/2-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
