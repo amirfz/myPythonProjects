@@ -24,6 +24,7 @@ class Window(QtGui.QMainWindow):
         self.__initMenu()
         self.__initZooming()
         self.__initPanning()
+        self.__initPicking()
         
     def __initUI(self):
         self.btnSize = 100   
@@ -66,6 +67,19 @@ class Window(QtGui.QMainWindow):
     def __initPanning(self):
         self.panner = Qwt.QwtPlotPanner(self.dataPlot.canvas())
         self.panner.setEnabled(False)
+        
+    def __initPicking(self):
+        self.picker = Qwt.QwtPlotPicker(Qwt.QwtPlot.xBottom,
+                               Qwt.QwtPlot.yLeft,
+                               Qwt.QwtPicker.PointSelection,
+                               Qwt.QwtPlotPicker.CrossRubberBand,
+                               Qwt.QwtPicker.ActiveOnly,
+                               self.dataPlot.canvas())
+                               
+        self.picker.selected.connect(self.mousePressed)
+       
+    def mousePressed(self, pos):
+        print pos.x()
         
     def __initMenu(self):
         menu = QMenu("menu", self)
@@ -159,7 +173,7 @@ class Window(QtGui.QMainWindow):
             self.curve2.attach(self.dataPlot)
         
             self.dataPlot.replot()
-    
+
 def main(): 
     app = QtGui.QApplication(sys.argv)
     GUI = Window()
