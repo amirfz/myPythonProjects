@@ -36,14 +36,8 @@ class Window(QtGui.QMainWindow):
         self.effResult = QtGui.QLineEdit(self)
         self.effResult.resize(self.btnSize,self.txtSize)
         self.effResult.move(self.lftMargin,self.topMargin)
-            
-        self.numOfInputs = 6;
-        self.intRangeTable = QtGui.QTableWidget(self)
-        self.intRangeTable.setRowCount(self.numOfInputs)
-        self.intRangeTable.setColumnCount(1)
-        self.intRangeTable.resize(self.btnSize,205)
-        self.intRangeTable.move(self.lftMargin,self.topMargin+self.txtSize)
-        self.intRangeTable.cellChanged.connect(self.setIntRange)
+        
+        self.numOfInputs = 5        
         self.intRangeArray = np.zeros(self.numOfInputs)
         
         self.dataPlot = Qwt.QwtPlot(self)
@@ -128,8 +122,38 @@ class Window(QtGui.QMainWindow):
             self.picker.setEnabled(True)
             
     def mousePressed(self, pos):
-        print pos.x()
-        
+        try:
+            intRangeIdx
+        except NameError:
+            print 'no'
+            intRangeIdx = 0
+        else:
+            if intRangeIdx < self.numOfInputs:
+                self.intRangeArray[intRangeIdx] = int(pos.x()) 
+                global intRangleIdx
+                intRangleIdx = intRangeIdx + 1
+                print intRangeIdx        
+                print self.intRangeArray
+                self.plotData()
+
+#        if np.count_nonzero(self.intRangeArray) == self.numOfInputs:
+#             np.sort(self.intRangeArray)
+#             self.intRangeArrayAll = np.zeros(2*int(self.intRangeArray[5])+2)
+#             
+#             peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
+#             self.intRangeArrayAll[0:2] = [self.intRangeArray[0], self.intRangeArray[1]]
+#             inputPulse = np.sum(self.cdata1[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata1[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
+#             outputPulse = 0;
+#             peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
+#             nextPeakStarts = self.intRangeArray[4] - self.intRangeArray[2]
+#             for idx in range(int(self.intRangeArray[5])):
+#                 bkg = np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts-peakWidth:self.intRangeArray[2]+idx*nextPeakStarts])
+#                 outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts:self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]) - bkg
+#                 self.intRangeArrayAll[2*idx+2:2*idx+4] = [self.intRangeArray[2]+idx*nextPeakStarts, self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]
+#                 
+#             self.effResult.setText(str(outputPulse/inputPulse))
+#             
+#        
     def resizeEvent(self, event):
         self.dataPlot.setGeometry(QtCore.QRect(self.btnSize*3/2, self.topMargin, self.width()-self.btnSize*3/2-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
     
@@ -151,27 +175,6 @@ class Window(QtGui.QMainWindow):
         
         self.plotData()
         self.zoomer.setZoomBase()
-         
-    def setIntRange(self):
-         self.intRangeArray[self.intRangeTable.currentRow()] = self.intRangeTable.currentItem().text() 
-
-         if np.count_nonzero(self.intRangeArray) == self.numOfInputs:
-             np.sort(self.intRangeArray)
-             self.intRangeArrayAll = np.zeros(2*int(self.intRangeArray[5])+2)
-             
-             peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
-             self.intRangeArrayAll[0:2] = [self.intRangeArray[0], self.intRangeArray[1]]
-             inputPulse = np.sum(self.cdata1[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata1[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
-             outputPulse = 0;
-             peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
-             nextPeakStarts = self.intRangeArray[4] - self.intRangeArray[2]
-             for idx in range(int(self.intRangeArray[5])):
-                 bkg = np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts-peakWidth:self.intRangeArray[2]+idx*nextPeakStarts])
-                 outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts:self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]) - bkg
-                 self.intRangeArrayAll[2*idx+2:2*idx+4] = [self.intRangeArray[2]+idx*nextPeakStarts, self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]
-                 
-             self.effResult.setText(str(outputPulse/inputPulse))
-             self.plotData()
         
     def plotData(self):        
         self.curve.detach()
