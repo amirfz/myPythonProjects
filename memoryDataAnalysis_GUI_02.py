@@ -14,11 +14,16 @@ from PyQt4.QtGui import *
 from PyQt4.Qt import *
 import matplotlib.pyplot as plt
 
+def counter():
+    counter.idx += 1
+    return counter.idx
+counter.idx = -1
+
 class Window(QtGui.QMainWindow):
     
     def __init__(self):
         super(Window,self).__init__()
-        self.setGeometry(50,50,800,600)
+        self.setGeometry(50,50,1000,800)
         self.setWindowTitle('Memory Data Analysis Tool')
         self.__initUI()
         self.__initMenu()
@@ -27,18 +32,10 @@ class Window(QtGui.QMainWindow):
         self.__initPicking()
         
     def __initUI(self):
-        self.btnSize = 100   
-        self.txtSize = 20
         self.lftMargin = 10
         self.topMargin = 60
         self.btmMargin = 10
-        
-        self.effResult = QtGui.QLineEdit(self)
-        self.effResult.resize(self.btnSize,self.txtSize)
-        self.effResult.move(self.lftMargin,self.topMargin)
-        
-        self.numOfInputs = 5        
-        self.intRangeArray = np.zeros(self.numOfInputs)
+        self.intRangeArray = np.zeros(5)
         
         self.dataPlot = Qwt.QwtPlot(self)
         grid = Qwt.QwtPlotGrid
@@ -101,10 +98,40 @@ class Window(QtGui.QMainWindow):
         exitAction = QAction(QIcon('icons/1451107579_exit.ico'),'Exit', menu)
         exitAction.triggered.connect(QtCore.QCoreApplication.instance().quit)
         menu.addAction(exitAction)
-        toolbar.addAction(exitAction)
+        toolbar.addAction(exitAction)        
+        menu.addSeparator()
+        toolbar.addSeparator()
+        
+        resetCounterAction = QAction('Reset Counter', menu)
+        resetCounterAction.triggered.connect(self.resetCounter)
+        menu.addAction(resetCounterAction)
+        toolbar.addAction(resetCounterAction)
+        
+        self.counterTxtBox = QtGui.QLineEdit(self)
+        self.counterTxtBox.setReadOnly(True)
+        self.counterTxtBox.setText(str(0))
+        toolbar.addWidget(self.counterTxtBox)
+        
+        self.noReadPeaksTxtBox = QtGui.QLineEdit(self)
+        self.noReadPeaksTxtBox.setText(str(3))
+        self.noReadPeaksTxtBox.textChanged.connect(self.calcIntegral)
+        toolbar.addWidget(self.noReadPeaksTxtBox)
+        menu.addSeparator()
+        toolbar.addSeparator()
+        
+        self.noPeaksChanged()
+        
+        self.effResult = QtGui.QLineEdit(self)
+        self.effResult.setReadOnly(True)
+        toolbar.addWidget(self.effResult)
         
         self.menuBar().addMenu(menu)
         self.addToolBar(toolbar)
+        
+    def resetCounter(self):
+        counter.idx = -1
+        self.counterTxtBox.setText(str(0))
+        
         
     def onMouseActGroupTriggered(self, action):        
         actionText = self.mouseActGroup.checkedAction().text()
@@ -121,41 +148,39 @@ class Window(QtGui.QMainWindow):
             self.panner.setEnabled(False)
             self.picker.setEnabled(True)
             
-    def mousePressed(self, pos):
-        try:
-            intRangeIdx
-        except NameError:
-            print 'no'
-            intRangeIdx = 0
-        else:
-            if intRangeIdx < self.numOfInputs:
-                self.intRangeArray[intRangeIdx] = int(pos.x()) 
-                global intRangleIdx
-                intRangleIdx = intRangeIdx + 1
-                print intRangeIdx        
-                print self.intRangeArray
-                self.plotData()
+    def mousePressed(self,pos): 
+        intRangeIdx = counter()   
+        self.counterTxtBox.setText(str(intRangeIdx))
+        if intRangeIdx < 5:
+            self.intRangeArray[intRangeIdx] = int(pos.x())
+        self.calcIntegral(intRangeIdx)
+        
+    def noPeaksChanged(self):
+        
 
-#        if np.count_nonzero(self.intRangeArray) == self.numOfInputs:
-#             np.sort(self.intRangeArray)
-#             self.intRangeArrayAll = np.zeros(2*int(self.intRangeArray[5])+2)
-#             
-#             peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
-#             self.intRangeArrayAll[0:2] = [self.intRangeArray[0], self.intRangeArray[1]]
-#             inputPulse = np.sum(self.cdata1[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata1[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
-#             outputPulse = 0;
-#             peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
-#             nextPeakStarts = self.intRangeArray[4] - self.intRangeArray[2]
-#             for idx in range(int(self.intRangeArray[5])):
-#                 bkg = np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts-peakWidth:self.intRangeArray[2]+idx*nextPeakStarts])
-#                 outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts:self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]) - bkg
-#                 self.intRangeArrayAll[2*idx+2:2*idx+4] = [self.intRangeArray[2]+idx*nextPeakStarts, self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]
-#                 
-#             self.effResult.setText(str(outputPulse/inputPulse))
-#             
-#        
+    def calcIntegral(self,intRangeIdx):     
+        np.sort(self.intRangeArray)
+             
+        peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
+        self.intRangeArrayAll[0:2] = [self.intRangeArray[0], self.intRangeArray[1]]
+        self.intRangeArrayAllyValues[0:2] = [self.cdata1[self.intRangeArray[0]], self.cdata1[self.intRangeArray[1]]]
+        inputPulse = np.sum(self.cdata1[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata1[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
+        outputPulse = 0;
+        peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
+        nextPeakStarts = self.intRangeArray[4] - self.intRangeArray[2]
+        for idx in range(int(self.noReadPeaksTxtBox.text())):
+            bkg = np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts-peakWidth:self.intRangeArray[2]+idx*nextPeakStarts])
+            outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts:self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]) - bkg
+            self.intRangeArrayAll[2*idx+2:2*idx+4] = [self.intRangeArray[2]+idx*nextPeakStarts, self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]
+            self.intRangeArrayAllyValues[2*idx+2:2*idx+4] = [self.cdata[self.intRangeArrayAll[2*idx+2]], self.cdata[self.intRangeArrayAll[2*idx+3]]]
+        
+        if intRangeIdx == 4:        
+             self.effResult.setText(str(outputPulse/inputPulse))
+             
+        self.plotData()
+        
     def resizeEvent(self, event):
-        self.dataPlot.setGeometry(QtCore.QRect(self.btnSize*3/2, self.topMargin, self.width()-self.btnSize*3/2-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
+        self.dataPlot.setGeometry(QtCore.QRect(self.lftMargin, self.topMargin, self.width()-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
     
     def showDialog(self):
         self.zoomer.zoom(0)
@@ -187,17 +212,16 @@ class Window(QtGui.QMainWindow):
         self.curve1.setPen(QPen(Qt.red,2))
         self.curve1.attach(self.dataPlot)
         
-        if np.count_nonzero(self.intRangeArray) == self.numOfInputs:      
-            self.curve2.detach()
-            self.curve2.setData(self.intRangeArrayAll,np.zeros(len(self.intRangeArrayAll)))
-            self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
-            self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
-                                                QBrush(),
-                                            QPen(Qt.green),
+        self.curve2.detach()
+        self.curve2.setData(self.intRangeArrayAll,self.intRangeArrayAllyValues)
+        self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
+        self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
+                                            QBrush(),
+                                            QPen(Qt.green,3),
                                             QSize(7, 7)))
-            self.curve2.attach(self.dataPlot)
+        self.curve2.attach(self.dataPlot)
         
-            self.dataPlot.replot()
+        self.dataPlot.replot()
 
 def main(): 
     app = QtGui.QApplication(sys.argv)
