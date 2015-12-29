@@ -107,7 +107,7 @@ class Window(QtGui.QMainWindow):
         menu.addAction(resetCounterAction)
         toolbar.addAction(resetCounterAction)
         
-        refreshIntAction = QAction('Rfresh efficiency', menu)
+        refreshIntAction = QAction('Refresh efficiency', menu)
         refreshIntAction.triggered.connect(self.calcIntegral)
         menu.addAction(refreshIntAction)
         toolbar.addAction(refreshIntAction)
