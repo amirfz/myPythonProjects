@@ -30,12 +30,12 @@ class Window(QtGui.QMainWindow):
         self.__initZooming()
         self.__initPanning()
         self.__initPicking()
+        self.__initCounter()
         
     def __initUI(self):
         self.lftMargin = 10
         self.topMargin = 60
         self.btmMargin = 10
-        self.intRangeArray = np.zeros(5)
         
         self.dataPlot = Qwt.QwtPlot(self)
         grid = Qwt.QwtPlotGrid
@@ -102,24 +102,15 @@ class Window(QtGui.QMainWindow):
         menu.addSeparator()
         toolbar.addSeparator()
         
-        resetCounterAction = QAction('Reset Counter', menu)
-        resetCounterAction.triggered.connect(self.resetCounter)
+        resetCounterAction = QAction('Reset Ranges', menu)
+        resetCounterAction.triggered.connect(self.__initCounter)
         menu.addAction(resetCounterAction)
         toolbar.addAction(resetCounterAction)
         
-        self.counterTxtBox = QtGui.QLineEdit(self)
-        self.counterTxtBox.setReadOnly(True)
-        self.counterTxtBox.setText(str(0))
-        toolbar.addWidget(self.counterTxtBox)
-        
-        self.noReadPeaksTxtBox = QtGui.QLineEdit(self)
-        self.noReadPeaksTxtBox.setText(str(3))
-        self.noReadPeaksTxtBox.textChanged.connect(self.calcIntegral)
-        toolbar.addWidget(self.noReadPeaksTxtBox)
-        menu.addSeparator()
-        toolbar.addSeparator()
-        
-        self.noPeaksChanged()
+        refreshIntAction = QAction('Rfresh efficiency', menu)
+        refreshIntAction.triggered.connect(self.calcIntegral)
+        menu.addAction(refreshIntAction)
+        toolbar.addAction(refreshIntAction)
         
         self.effResult = QtGui.QLineEdit(self)
         self.effResult.setReadOnly(True)
@@ -128,9 +119,11 @@ class Window(QtGui.QMainWindow):
         self.menuBar().addMenu(menu)
         self.addToolBar(toolbar)
         
-    def resetCounter(self):
-        counter.idx = -1
-        self.counterTxtBox.setText(str(0))
+    def __initCounter(self):
+        self.intRangeArray = []
+        self.intRangeArrayYValues = []
+        self.plotData()
+        self.effResult.setText(str(0))
         
         
     def onMouseActGroupTriggered(self, action):        
@@ -148,34 +141,26 @@ class Window(QtGui.QMainWindow):
             self.panner.setEnabled(False)
             self.picker.setEnabled(True)
             
-    def mousePressed(self,pos): 
-        intRangeIdx = counter()   
-        self.counterTxtBox.setText(str(intRangeIdx))
-        if intRangeIdx < 5:
-            self.intRangeArray[intRangeIdx] = int(pos.x())
-        self.calcIntegral(intRangeIdx)
-        
-    def noPeaksChanged(self):
-        
+    def mousePressed(self,pos):   
+        self.intRangeArray.extend([int(pos.x())])
+        if len (self.intRangeArray) < 3:
+            self.intRangeArrayYValues.extend([self.cdata1[self.intRangeArray[-1]]])
+        else:
+            self.intRangeArrayYValues.extend([self.cdata[self.intRangeArray[-1]]])
+        self.calcIntegral()
 
-    def calcIntegral(self,intRangeIdx):     
-        np.sort(self.intRangeArray)
-             
-        peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
-        self.intRangeArrayAll[0:2] = [self.intRangeArray[0], self.intRangeArray[1]]
-        self.intRangeArrayAllyValues[0:2] = [self.cdata1[self.intRangeArray[0]], self.cdata1[self.intRangeArray[1]]]
-        inputPulse = np.sum(self.cdata1[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata1[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
-        outputPulse = 0;
-        peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
-        nextPeakStarts = self.intRangeArray[4] - self.intRangeArray[2]
-        for idx in range(int(self.noReadPeaksTxtBox.text())):
-            bkg = np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts-peakWidth:self.intRangeArray[2]+idx*nextPeakStarts])
-            outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2]+idx*nextPeakStarts:self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]) - bkg
-            self.intRangeArrayAll[2*idx+2:2*idx+4] = [self.intRangeArray[2]+idx*nextPeakStarts, self.intRangeArray[2]+idx*nextPeakStarts+peakWidth]
-            self.intRangeArrayAllyValues[2*idx+2:2*idx+4] = [self.cdata[self.intRangeArrayAll[2*idx+2]], self.cdata[self.intRangeArrayAll[2*idx+3]]]
+    def calcIntegral(self):
+        if len(self.intRangeArray) > 3:    
+            peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
+            inputPulse = np.sum(self.cdata1[self.intRangeArray[0]:self.intRangeArray[1]]) - np.sum(self.cdata1[self.intRangeArray[0]-peakWidth:self.intRangeArray[0]])
+            outputPulse = 0;
+            peakWidth = self.intRangeArray[3] - self.intRangeArray[2]
         
-        if intRangeIdx == 4:        
-             self.effResult.setText(str(outputPulse/inputPulse))
+            for idx in range(int(len(self.intRangeArray)/2) - 1):
+                bkg = np.sum(self.cdata[self.intRangeArray[2*idx+2]-peakWidth:self.intRangeArray[2*idx+2]])
+                outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2*idx+2]:self.intRangeArray[2*idx+3]]) - bkg
+        
+            self.effResult.setText(str(outputPulse/inputPulse))
              
         self.plotData()
         
@@ -201,25 +186,30 @@ class Window(QtGui.QMainWindow):
         self.plotData()
         self.zoomer.setZoomBase()
         
-    def plotData(self):        
-        self.curve.detach()
-        self.curve.setData(range(len(self.tdata)), self.cdata)
-        self.curve.setPen(QPen(Qt.blue,2))
-        self.curve.attach(self.dataPlot)
-        
-        self.curve1.detach()
-        self.curve1.setData(range(len(self.tdata1)), self.cdata1)
-        self.curve1.setPen(QPen(Qt.red,2))
-        self.curve1.attach(self.dataPlot)
-        
-        self.curve2.detach()
-        self.curve2.setData(self.intRangeArrayAll,self.intRangeArrayAllyValues)
-        self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
-        self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
+    def plotData(self):   
+        try:
+            self.cdata
+        except:
+            pass
+        else:
+            self.curve.detach()
+            self.curve.setData(range(len(self.tdata)), self.cdata)
+            self.curve.setPen(QPen(Qt.blue,2))
+            self.curve.attach(self.dataPlot)
+            
+            self.curve1.detach()
+            self.curve1.setData(range(len(self.tdata1)), self.cdata1)
+            self.curve1.setPen(QPen(Qt.red,2))
+            self.curve1.attach(self.dataPlot)
+            
+            self.curve2.detach()
+            self.curve2.setData(self.intRangeArray,self.intRangeArrayYValues)
+            self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
+            self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
                                             QBrush(),
                                             QPen(Qt.green,3),
                                             QSize(7, 7)))
-        self.curve2.attach(self.dataPlot)
+            self.curve2.attach(self.dataPlot)
         
         self.dataPlot.replot()
 
