@@ -33,6 +33,8 @@ class Window(QtGui.QMainWindow):
         self.__initCounter()
         
     def __initUI(self):
+        self.undoStack = QUndoStack(self)
+        
         self.lftMargin = 10
         self.topMargin = 60
         self.btmMargin = 10
@@ -71,52 +73,73 @@ class Window(QtGui.QMainWindow):
         self.picker.selected.connect(self.mousePressed)
         
     def __initMenu(self):
-        menu = QMenu("File", self)
+        menuFile = QMenu("File", self)
+        menuEdit = QMenu("Edit", self)
         toolbar = QToolBar(self)
         
-        loadDataAction =  QAction(QIcon('icons/1451107635_document-open.ico'),'Load Data', menu)
+        loadDataAction =  QAction(QIcon('icons/open.ico'),'Load Data', menuFile)
+        loadDataAction.setShortcut('Ctrl+O')
         loadDataAction.triggered.connect(self.showDialog)       
-        menu.addAction(loadDataAction)
-        toolbar.addAction(loadDataAction)
-        menu.addSeparator()  
-        toolbar.addSeparator() 
+        menuFile.addAction(loadDataAction)  
+        menuFile.addSeparator()  
+        
+        exitAction = QAction(QIcon('icons/exit.ico'),'Exit', menuFile)
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.triggered.connect(QtCore.QCoreApplication.instance().quit)
+        menuFile.addAction(exitAction)
+        
+        undoAction = QAction(QIcon('icons/undo.ico'),'Undo', menuEdit)
+        undoAction.setShortcut('Ctrl+Z')
+        undoAction.triggered.connect(self.undoStack.undo) 
+        menuEdit.addAction(undoAction)
+        
+        redoAction = QAction(QIcon('icons/redo.ico'),'Redo', menuEdit)
+        redoAction.setShortcut('Ctrl+Y')
+        redoAction.triggered.connect(self.undoStack.redo) 
+        menuEdit.addAction(redoAction)
+        menuEdit.addSeparator()
         
         self.mouseActGroup = QActionGroup(self, exclusive=True)
-        zoomAction = QAction(QIcon('icons/Zerode-Plump-Search.ico'),'Zoom', menu, checkable=True)        
-        menu.addAction(self.mouseActGroup.addAction(zoomAction))
-        toolbar.addAction(self.mouseActGroup.addAction(zoomAction))
-        panAction = QAction(QIcon('icons/Icons8-Ios7-Hands-Hand.ico'),'Pan', menu, checkable=True)
-        menu.addAction(self.mouseActGroup.addAction(panAction))
-        toolbar.addAction(self.mouseActGroup.addAction(panAction))
-        pickAction = QAction(QIcon('icons/Iconsmind-Outline-Hand-Touch.ico'),'Pick', menu, checkable=True)
-        menu.addAction(self.mouseActGroup.addAction(pickAction))
-        toolbar.addAction(self.mouseActGroup.addAction(pickAction))
+        zoomAction = QAction(QIcon('icons/search.ico'),'Zoom', menuEdit, checkable=True)       
+        zoomAction.setShortcut('Z')
+        menuEdit.addAction(self.mouseActGroup.addAction(zoomAction))
+        panAction = QAction(QIcon('icons/hand.ico'),'Pan', menuEdit, checkable=True)
+        panAction.setShortcut('P')
+        menuEdit.addAction(self.mouseActGroup.addAction(panAction))
+        pickAction = QAction(QIcon('icons/hand-touch.ico'),'Pick', menuEdit, checkable=True)
+        pickAction.setShortcut('C')
+        menuEdit.addAction(self.mouseActGroup.addAction(pickAction))
         self.mouseActGroup.triggered.connect(self.onMouseActGroupTriggered)
-        menu.addSeparator()
-        toolbar.addSeparator()
+        menuEdit.addSeparator()
         
-        exitAction = QAction(QIcon('icons/1451107579_exit.ico'),'Exit', menu)
-        exitAction.triggered.connect(QtCore.QCoreApplication.instance().quit)
-        menu.addAction(exitAction)
-        toolbar.addAction(exitAction)        
-        menu.addSeparator()
-        toolbar.addSeparator()
-        
-        resetCounterAction = QAction('Reset Ranges', menu)
+        resetCounterAction = QAction('Reset Ranges', menuEdit)
         resetCounterAction.triggered.connect(self.__initCounter)
-        menu.addAction(resetCounterAction)
-        toolbar.addAction(resetCounterAction)
+        menuEdit.addAction(resetCounterAction)
         
-        refreshIntAction = QAction('Refresh efficiency', menu)
+        refreshIntAction = QAction('Refresh efficiency', menuEdit)
         refreshIntAction.triggered.connect(self.calcIntegral)
-        menu.addAction(refreshIntAction)
-        toolbar.addAction(refreshIntAction)
+        menuEdit.addAction(refreshIntAction)
         
         self.effResult = QtGui.QLineEdit(self)
         self.effResult.setReadOnly(True)
-        toolbar.addWidget(self.effResult)
         
-        self.menuBar().addMenu(menu)
+        toolbar.addAction(loadDataAction)
+        toolbar.addSeparator()
+        toolbar.addAction(self.mouseActGroup.addAction(zoomAction))
+        toolbar.addAction(self.mouseActGroup.addAction(panAction))
+        toolbar.addAction(self.mouseActGroup.addAction(pickAction))
+        toolbar.addSeparator()
+        toolbar.addAction(undoAction)
+        toolbar.addAction(redoAction)
+        toolbar.addSeparator()
+        toolbar.addAction(resetCounterAction)
+        toolbar.addAction(refreshIntAction)
+        toolbar.addWidget(self.effResult)
+        toolbar.addSeparator()
+        toolbar.addAction(exitAction)   
+        
+        self.menuBar().addMenu(menuFile)
+        self.menuBar().addMenu(menuEdit)
         self.addToolBar(toolbar)
         
     def __initCounter(self):
