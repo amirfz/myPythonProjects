@@ -19,6 +19,28 @@ def counter():
     return counter.idx
 counter.idx = -1
 
+class CommandAdd(QUndoCommand):
+    def __init__(self,x,intRangeArray,intRangeArrayYValues,cdata1,cdata):
+        super(CommandAdd, self).__init__()
+        self.intRangeArray = intRangeArray
+        self.intRangeArrayYValues = intRangeArrayYValues
+        self.x = x
+        self.cdata1 = cdata1
+        self.cdata = cdata
+
+    def redo(self):
+        self.intRangeArray.append(self.x)
+        if len (self.intRangeArray) < 3:
+            self.intRangeArrayYValues.append(self.cdata1[self.intRangeArray[-1]])
+        else:
+            self.intRangeArrayYValues.append(self.cdata[self.intRangeArray[-1]])
+
+    def undo(self):
+        print self.intRangeArray
+        self.intRangeArray.remove(self.intRangeArray[-1])
+        self.intRangeArrayYValues.remove(self.intRangeArrayYValues[-1])
+        print self.intRangeArray
+
 class Window(QtGui.QMainWindow):
     
     def __init__(self):
@@ -88,15 +110,17 @@ class Window(QtGui.QMainWindow):
         exitAction.triggered.connect(QtCore.QCoreApplication.instance().quit)
         menuFile.addAction(exitAction)
         
-        undoAction = QAction(QIcon('icons/undo.ico'),'Undo', menuEdit)
-        undoAction.setShortcut('Ctrl+Z')
-        undoAction.triggered.connect(self.undoStack.undo) 
-        menuEdit.addAction(undoAction)
+        self.undoAction = QAction(QIcon('icons/undo.ico'),'Undo', menuEdit)
+        self.undoAction.setShortcut('Ctrl+Z')
+        self.undoAction.setEnabled(False)
+        self.undoAction.triggered.connect(self.undoStack.undo) 
+        menuEdit.addAction(self.undoAction)
         
-        redoAction = QAction(QIcon('icons/redo.ico'),'Redo', menuEdit)
-        redoAction.setShortcut('Ctrl+Y')
-        redoAction.triggered.connect(self.undoStack.redo) 
-        menuEdit.addAction(redoAction)
+        self.redoAction = QAction(QIcon('icons/redo.ico'),'Redo', menuEdit)
+        self.redoAction.setShortcut('Ctrl+Y')
+        self.redoAction.setEnabled(False)
+        self.redoAction.triggered.connect(self.undoStack.redo) 
+        menuEdit.addAction(self.redoAction)
         menuEdit.addSeparator()
         
         self.mouseActGroup = QActionGroup(self, exclusive=True)
@@ -129,8 +153,8 @@ class Window(QtGui.QMainWindow):
         toolbar.addAction(self.mouseActGroup.addAction(panAction))
         toolbar.addAction(self.mouseActGroup.addAction(pickAction))
         toolbar.addSeparator()
-        toolbar.addAction(undoAction)
-        toolbar.addAction(redoAction)
+        toolbar.addAction(self.undoAction)
+        toolbar.addAction(self.redoAction)
         toolbar.addSeparator()
         toolbar.addAction(resetCounterAction)
         toolbar.addAction(refreshIntAction)
@@ -146,8 +170,7 @@ class Window(QtGui.QMainWindow):
         self.intRangeArray = []
         self.intRangeArrayYValues = []
         self.plotData()
-        self.effResult.setText(str(0))
-        
+        self.effResult.setText(str(0))      
         
     def onMouseActGroupTriggered(self, action):        
         actionText = self.mouseActGroup.checkedAction().text()
@@ -164,13 +187,14 @@ class Window(QtGui.QMainWindow):
             self.panner.setEnabled(False)
             self.picker.setEnabled(True)
             
-    def mousePressed(self,pos):   
-        self.intRangeArray.extend([int(pos.x())])
-        if len (self.intRangeArray) < 3:
-            self.intRangeArrayYValues.extend([self.cdata1[self.intRangeArray[-1]]])
-        else:
-            self.intRangeArrayYValues.extend([self.cdata[self.intRangeArray[-1]]])
+    def mousePressed(self,pos): 
+        command = CommandAdd(int(pos.x()),self.intRangeArray,self.intRangeArrayYValues,self.cdata1,self.cdata)
+        self.undoStack.push(command)
+        if self.undoStack.index() > 0:
+            self.redoAction.setEnabled(True)
+            self.undoAction.setEnabled(True)
         self.calcIntegral()
+        self.plotData()
 
     def calcIntegral(self):
         if len(self.intRangeArray) > 3:    
@@ -184,8 +208,6 @@ class Window(QtGui.QMainWindow):
                 outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2*idx+2]:self.intRangeArray[2*idx+3]]) - bkg
         
             self.effResult.setText(str(outputPulse/inputPulse))
-             
-        self.plotData()
         
     def resizeEvent(self, event):
         self.dataPlot.setGeometry(QtCore.QRect(self.lftMargin, self.topMargin, self.width()-self.lftMargin, self.height()-self.topMargin-self.btmMargin))
