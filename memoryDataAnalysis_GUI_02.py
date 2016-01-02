@@ -20,13 +20,15 @@ def counter():
 counter.idx = -1
 
 class CommandAdd(QUndoCommand):
-    def __init__(self,x,intRangeArray,intRangeArrayYValues,cdata1,cdata):
+    def __init__(self,x,intRangeArray,intRangeArrayYValues,cdata1,cdata,curve,dataPlot):
         super(CommandAdd, self).__init__()
         self.intRangeArray = intRangeArray
         self.intRangeArrayYValues = intRangeArrayYValues
         self.x = x
         self.cdata1 = cdata1
         self.cdata = cdata
+        self.curve = curve
+        self.dataPlot = dataPlot
 
     def redo(self):
         self.intRangeArray.append(self.x)
@@ -34,12 +36,30 @@ class CommandAdd(QUndoCommand):
             self.intRangeArrayYValues.append(self.cdata1[self.intRangeArray[-1]])
         else:
             self.intRangeArrayYValues.append(self.cdata[self.intRangeArray[-1]])
+        plotData(self.curve,self.dataPlot,self.intRangeArray,self.intRangeArrayYValues,2)
+        self.dataPlot.replot()
 
     def undo(self):
-        print self.intRangeArray
         self.intRangeArray.remove(self.intRangeArray[-1])
         self.intRangeArrayYValues.remove(self.intRangeArrayYValues[-1])
-        print self.intRangeArray
+        plotData(self.curve,self.dataPlot,self.intRangeArray,self.intRangeArrayYValues,2)
+        self.dataPlot.replot()
+        
+class plotData():
+    def __init__(self,curve,dataPlot,x,y,styleId):
+        curve.detach()
+        curve.setData(x, y)
+        if styleId == 0:
+            curve.setPen(QPen(Qt.blue,2))
+        elif styleId == 1:
+            curve.setPen(QPen(Qt.red,2)) 
+        elif styleId == 2:
+            curve.setPen(QPen(Qt.blue,1,Qt.NoPen))
+            curve.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
+                                            QBrush(),
+                                            QPen(Qt.green,3),
+                                            QSize(7, 7)))
+        curve.attach(dataPlot)
 
 class Window(QtGui.QMainWindow):
     
@@ -169,7 +189,8 @@ class Window(QtGui.QMainWindow):
     def __initCounter(self):
         self.intRangeArray = []
         self.intRangeArrayYValues = []
-        self.plotData()
+        plotData(self.curve2,self.dataPlot,self.intRangeArray,self.intRangeArrayYValues,2)
+        self.dataPlot.replot()
         self.effResult.setText(str(0))      
         
     def onMouseActGroupTriggered(self, action):        
@@ -188,13 +209,12 @@ class Window(QtGui.QMainWindow):
             self.picker.setEnabled(True)
             
     def mousePressed(self,pos): 
-        command = CommandAdd(int(pos.x()),self.intRangeArray,self.intRangeArrayYValues,self.cdata1,self.cdata)
+        command = CommandAdd(int(pos.x()),self.intRangeArray,self.intRangeArrayYValues,self.cdata1,self.cdata,self.curve2,self.dataPlot)
         self.undoStack.push(command)
         if self.undoStack.index() > 0:
             self.redoAction.setEnabled(True)
             self.undoAction.setEnabled(True)
         self.calcIntegral()
-        self.plotData()
 
     def calcIntegral(self):
         if len(self.intRangeArray) > 3:    
@@ -228,35 +248,10 @@ class Window(QtGui.QMainWindow):
          self.tdata = self.data[:,1]
          self.cdata = self.data[:,0]  
         
-        self.plotData()
-        self.zoomer.setZoomBase()
-        
-    def plotData(self):   
-        try:
-            self.cdata
-        except:
-            pass
-        else:
-            self.curve.detach()
-            self.curve.setData(range(len(self.tdata)), self.cdata)
-            self.curve.setPen(QPen(Qt.blue,2))
-            self.curve.attach(self.dataPlot)
-            
-            self.curve1.detach()
-            self.curve1.setData(range(len(self.tdata1)), self.cdata1)
-            self.curve1.setPen(QPen(Qt.red,2))
-            self.curve1.attach(self.dataPlot)
-            
-            self.curve2.detach()
-            self.curve2.setData(self.intRangeArray,self.intRangeArrayYValues)
-            self.curve2.setPen(QPen(Qt.blue,1,Qt.NoPen))
-            self.curve2.setSymbol(Qwt.QwtSymbol(Qwt.QwtSymbol.Rect,
-                                            QBrush(),
-                                            QPen(Qt.green,3),
-                                            QSize(7, 7)))
-            self.curve2.attach(self.dataPlot)
-        
+        plotData(self.curve,self.dataPlot,range(len(self.tdata)),self.cdata,0)
+        plotData(self.curve1,self.dataPlot,range(len(self.tdata1)),self.cdata1,1)
         self.dataPlot.replot()
+        self.zoomer.setZoomBase()
 
 def main(): 
     app = QtGui.QApplication(sys.argv)
