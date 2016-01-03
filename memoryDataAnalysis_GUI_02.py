@@ -160,6 +160,11 @@ class Window(QtGui.QMainWindow):
         resetCounterAction.triggered.connect(self.__initCounter)
         menuEdit.addAction(resetCounterAction)
         
+        self.autosetAction = QAction('Autoset Ranges', menuEdit)
+        self.autosetAction.triggered.connect(self.autosetRanges)
+        self.autosetAction.setEnabled(False)
+        menuEdit.addAction(self.autosetAction)
+        
         refreshIntAction = QAction('Refresh efficiency', menuEdit)
         refreshIntAction.triggered.connect(self.calcIntegral)
         menuEdit.addAction(refreshIntAction)
@@ -177,6 +182,7 @@ class Window(QtGui.QMainWindow):
         toolbar.addAction(self.redoAction)
         toolbar.addSeparator()
         toolbar.addAction(resetCounterAction)
+        toolbar.addAction(self.autosetAction)
         toolbar.addAction(refreshIntAction)
         toolbar.addWidget(self.effResult)
         toolbar.addSeparator()
@@ -191,7 +197,8 @@ class Window(QtGui.QMainWindow):
         self.intRangeArrayYValues = []
         plotData(self.curve2,self.dataPlot,self.intRangeArray,self.intRangeArrayYValues,2)
         self.dataPlot.replot()
-        self.effResult.setText(str(0))      
+        self.effResult.setText(str(0))  
+        self.autosetAction.setEnabled(False)
         
     def onMouseActGroupTriggered(self, action):        
         actionText = self.mouseActGroup.checkedAction().text()
@@ -214,6 +221,41 @@ class Window(QtGui.QMainWindow):
         if self.undoStack.index() > 0:
             self.redoAction.setEnabled(True)
             self.undoAction.setEnabled(True)
+        if len(self.intRangeArray) > 1:
+            self.autosetAction.setEnabled(True)  
+        self.calcIntegral()
+        
+    def autosetRanges(self):
+        inputTextList = ["enter the memory time (pts)", "enter the pulse rep time (pts)", "enter the numebr of readout peaks"]
+        inputMinValues = [200, 50, 1]
+        autosetParms = []
+        for idx in range(3):
+            dialog = QtGui.QInputDialog()
+            dialog.setLabelText(inputTextList[idx])
+            dialog.setWindowTitle("Autoset Parameters")
+            dialog.setInputMode(1) # interger
+            dialog.setIntMinimum(inputMinValues[idx])
+            dialog.setIntMaximum(5*inputMinValues[idx])
+            dialog.setIntValue(inputMinValues[idx])
+            dialog.exec_()
+            if not dialog.result():
+                break
+            autosetParms.append(dialog.intValue())
+        self.intRangeArray = self.intRangeArray[0:2]
+        self.intRangeArray.extend(np.zeros(2*autosetParms[2]))
+        self.intRangeArrayYValues = self.intRangeArrayYValues[0:2]
+        self.intRangeArrayYValues.extend(np.zeros(2*autosetParms[2]))
+        peakWidth = self.intRangeArray[1] - self.intRangeArray[0]
+        outputPulse = 0
+        for idx in range(autosetParms[2]):
+            self.intRangeArray[2*idx+2:2*idx+4] = [self.intRangeArray[0]+autosetParms[0]+idx*autosetParms[1], 
+                                                   self.intRangeArray[0]+autosetParms[0]+idx*autosetParms[1]+peakWidth]
+            self.intRangeArrayYValues[2*idx+2] = self.cdata[self.intRangeArray[2*idx+2]]
+            self.intRangeArrayYValues[2*idx+3] = self.cdata[self.intRangeArray[2*idx+3]]
+            bkg = np.sum(self.cdata[self.intRangeArray[2*idx+2]:self.intRangeArray[2*idx+3]])
+            outputPulse = outputPulse + np.sum(self.cdata[self.intRangeArray[2*idx+2]:self.intRangeArray[2*idx+3]]) - bkg
+        plotData(self.curve2,self.dataPlot,self.intRangeArray,self.intRangeArrayYValues,2)
+        self.dataPlot.replot()
         self.calcIntegral()
 
     def calcIntegral(self):
