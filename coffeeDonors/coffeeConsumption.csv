@@ -1,4 +1,12 @@
-Name,Been here for (months),consumption (cups),paid (pound),per weight (g)
+Name,beenHereFor_months,consumption_cups,paid_pounds,perWeight_g
 Dylan,32,1.5,3,227
-Jelmer,6,4,13,1000
+Jelmer,6,1,13,1000
 Eilon,29,1.5,18,1000
+William,17,0.5,,
+Amir,15,0.5,3,227
+Helen,8,2,3,227
+Steve,48,1,3,227
+Ian,100,0,,
+Thomas,28,0,,
+Merritt,48,0,,
+Joe,20,2,3,227
