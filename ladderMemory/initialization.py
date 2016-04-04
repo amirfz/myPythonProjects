@@ -109,6 +109,6 @@ def init():
 	Sol = np.append(np.append([Om_s_0], [Om_c_0], axis=0), np.append(P, S, axis=0), axis=0) # pde solution
 
 	i_ti = np.argmin(np.absolute(t-(t0signal-4/sig_s))) # frames start time marker
-	i_t = np.round(np.linspace(i_ti,t.shape[0],frame))
+	i_t = np.round(np.linspace(i_ti,t.shape[0]-1,frame))
 	
 	return frame,z,t,N, Sol, Om_s_bc, Om_c_bc, dt, i_t, c, Gam_eg, Gam_re, gam_gr, gs, gc, Del_s, Del_c, chebDiffMatrix_norm, Om0_s, Om0_c
